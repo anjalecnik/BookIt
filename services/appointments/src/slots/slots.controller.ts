@@ -34,7 +34,7 @@ export class SlotsController {
 
   @Post('reservations')
   reserve(@Body() dto: ReserveSlotDto) {
-    return this.slots.reserve(dto.slotId, dto.userId);
+    return this.slots.reserve(dto.slotId, dto.userId, dto.email);
   }
 
   @Delete('reservations/:slotId')

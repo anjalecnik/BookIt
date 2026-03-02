@@ -15,6 +15,7 @@ Appointments service je mikrostoritev v sistemu BookIt, ki skrbi za upravljanje 
 ```env
 PORT=3002
 DATABASE_URL=<postgres_url>
+NOTIFICATIONS_URL=http://notifications:3003
 ```
 
 ## Zagon

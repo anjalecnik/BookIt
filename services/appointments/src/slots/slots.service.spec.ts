@@ -4,15 +4,20 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { AppointmentSlotEntity, Provider } from './appointment-slot.entity';
 import { SlotsService } from './slots.service';
+import { NotificationsClient } from '../notifications/notifications.client';
 
 describe('SlotsService', () => {
   let service: SlotsService;
 
-  // mocks
   let dataSource: { transaction: jest.Mock };
   let slotsRepo: Partial<jest.Mocked<Repository<AppointmentSlotEntity>>>;
+  const notificationsClient = {
+    sendEmail: jest.fn().mockResolvedValue(undefined),
+  };
 
   beforeEach(async () => {
+    jest.clearAllMocks();
+
     dataSource = {
       transaction: jest.fn(),
     };
@@ -30,6 +35,7 @@ describe('SlotsService', () => {
           provide: getRepositoryToken(AppointmentSlotEntity),
           useValue: slotsRepo,
         },
+        { provide: NotificationsClient, useValue: notificationsClient },
       ],
     }).compile();
 
@@ -58,12 +64,12 @@ describe('SlotsService', () => {
     });
   });
 
-  it('reserve() should reserve a free slot', async () => {
+  it('reserve() should reserve a free slot and send email', async () => {
     const slot: AppointmentSlotEntity = {
       id: 'slot-1',
       provider: Provider.FITNES,
-      startsAt: new Date(),
-      endsAt: new Date(),
+      startsAt: new Date('2026-01-01T08:00:00.000Z'),
+      endsAt: new Date('2026-01-01T09:00:00.000Z'),
       reservedByUserId: null,
       reservedAt: null,
       createdAt: new Date(),
@@ -81,7 +87,7 @@ describe('SlotsService', () => {
       return cb(manager);
     });
 
-    const result = await service.reserve('slot-1', 'user-1');
+    const result = await service.reserve('slot-1', 'user-1', 'a@b.com');
 
     expect(managerRepo.findOne).toHaveBeenCalledWith({
       where: { id: 'slot-1' },
@@ -91,9 +97,16 @@ describe('SlotsService', () => {
     expect(managerRepo.save).toHaveBeenCalled();
     expect(result.reservedByUserId).toBe('user-1');
     expect(result.reservedAt).toBeInstanceOf(Date);
+
+    expect(notificationsClient.sendEmail).toHaveBeenCalledTimes(1);
+    expect(notificationsClient.sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'a@b.com',
+      }),
+    );
   });
 
-  it('reserve() should fail if slot does not exist', async () => {
+  it('reserve() should fail if slot does not exist (and not send email)', async () => {
     const managerRepo = {
       findOne: jest.fn().mockResolvedValue(null),
       save: jest.fn(),
@@ -104,12 +117,14 @@ describe('SlotsService', () => {
       return cb(manager);
     });
 
-    await expect(service.reserve('missing', 'user-1')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(
+      service.reserve('missing', 'user-1', 'a@b.com'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(notificationsClient.sendEmail).not.toHaveBeenCalled();
   });
 
-  it('reserve() should fail if slot already reserved', async () => {
+  it('reserve() should fail if slot already reserved (and not send email)', async () => {
     const slot: AppointmentSlotEntity = {
       id: 'slot-1',
       provider: Provider.FRIZER,
@@ -130,10 +145,12 @@ describe('SlotsService', () => {
       return cb(manager);
     });
 
-    await expect(service.reserve('slot-1', 'user-1')).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.reserve('slot-1', 'user-1', 'a@b.com'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
     expect(managerRepo.save).not.toHaveBeenCalled();
+    expect(notificationsClient.sendEmail).not.toHaveBeenCalled();
   });
 
   it('cancel() should clear reservation if reserved by same user', async () => {
@@ -214,6 +231,7 @@ describe('SlotsService', () => {
     await expect(service.cancel('slot-1', 'user-1')).rejects.toBeInstanceOf(
       BadRequestException,
     );
+
     expect(managerRepo.save).not.toHaveBeenCalled();
   });
 });

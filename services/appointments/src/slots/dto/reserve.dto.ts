@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, MinLength } from 'class-validator';
 
 export class ReserveSlotDto {
   @ApiProperty()
@@ -10,4 +10,8 @@ export class ReserveSlotDto {
   @IsString()
   @MinLength(3)
   userId!: string;
+
+  @ApiProperty({ description: 'User email for notifications' })
+  @IsEmail()
+  email!: string;
 }

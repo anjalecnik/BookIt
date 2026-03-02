@@ -6,6 +6,7 @@ import {
 import { DataSource, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AppointmentSlotEntity, Provider } from './appointment-slot.entity';
+import { NotificationsClient } from '../notifications/notifications.client';
 
 @Injectable()
 export class SlotsService {
@@ -13,6 +14,7 @@ export class SlotsService {
     private dataSource: DataSource,
     @InjectRepository(AppointmentSlotEntity)
     private slotsRepo: Repository<AppointmentSlotEntity>,
+    private notifications: NotificationsClient,
   ) {}
 
   providers(): string[] {
@@ -24,8 +26,8 @@ export class SlotsService {
     return this.slotsRepo.find({ where, order: { startsAt: 'ASC' } });
   }
 
-  async reserve(slotId: string, userId: string) {
-    return this.dataSource.transaction(async (manager) => {
+  async reserve(slotId: string, userId: string, email: string) {
+    const savedSlot = await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(AppointmentSlotEntity);
 
       const slot = await repo.findOne({
@@ -42,6 +44,14 @@ export class SlotsService {
 
       return repo.save(slot);
     });
+
+    await this.notifications.sendEmail({
+      to: email,
+      subject: 'BookIt – Rezervacija potrjena',
+      text: `Rezervacija je potrjena (${savedSlot.provider}) ${savedSlot.startsAt.toISOString()}–${savedSlot.endsAt.toISOString()}.`,
+    });
+
+    return savedSlot;
   }
 
   async cancel(slotId: string, userId: string) {

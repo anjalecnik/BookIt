@@ -1,0 +1,67 @@
+services:
+  users-db:
+    image: postgres:16
+    container_name: bookit-users-db
+    environment:
+      POSTGRES_USER: bookit
+      POSTGRES_PASSWORD: bookit
+      POSTGRES_DB: bookit_users
+    ports:
+      - '5433:5432'
+    volumes:
+      - users_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U bookit -d bookit_users']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  appointments-db:
+    image: postgres:16
+    container_name: bookit-appointments-db
+    environment:
+      POSTGRES_USER: bookit
+      POSTGRES_PASSWORD: bookit
+      POSTGRES_DB: bookit_appointments
+    ports:
+      - '5434:5432'
+    volumes:
+      - appointments_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U bookit -d bookit_appointments']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  users:
+    build:
+      context: ./services/users
+      dockerfile: Dockerfile
+    container_name: bookit-users
+    environment:
+      PORT: '3001'
+      DATABASE_URL: 'postgres://bookit:bookit@users-db:5432/bookit_users'
+      GOOGLE_CLIENT_ID: '${GOOGLE_CLIENT_ID}'
+    ports:
+      - '3001:3001'
+    depends_on:
+      users-db:
+        condition: service_healthy
+
+  appointments:
+    build:
+      context: ./services/appointments
+      dockerfile: Dockerfile
+    container_name: bookit-appointments
+    environment:
+      PORT: '3002'
+      DATABASE_URL: 'postgres://bookit:bookit@appointments-db:5432/bookit_appointments'
+    ports:
+      - '3002:3002'
+    depends_on:
+      appointments-db:
+        condition: service_healthy
+
+volumes:
+  users_db_data:
+  appointments_db_data:

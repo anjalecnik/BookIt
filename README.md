@@ -26,7 +26,7 @@ Sistem je zasnovan kot spletna aplikacija, ki prek API-vmesnikov komunicira z za
 
 ## 3. Arhitektura sistema
 
-![Arhitekturni diagram](https://github.com/user-attachments/assets/4876ef7d-8c82-41e1-aa52-4fe6b83f5b0e)
+![Arhitekturni diagram](https://github.com/user-attachments/assets/3458b490-28a0-4cc7-8371-ca0fcb91027b)
 
 ## 4. Navodila za zagon
 

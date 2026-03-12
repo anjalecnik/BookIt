@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
@@ -7,6 +7,8 @@ import { GoogleTokenVerifierService } from './google-token-verifier.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(UserEntity) private usersRepo: Repository<UserEntity>,
     private googleVerifier: GoogleTokenVerifierService,
@@ -15,13 +17,23 @@ export class AuthService {
 
   async authWithGoogle(idToken: string) {
     const clientId = this.cfg.get<string>('GOOGLE_CLIENT_ID');
-    if (!clientId) throw new Error('Missing GOOGLE_CLIENT_ID');
+    if (!clientId) {
+      this.logger.error('Missing GOOGLE_CLIENT_ID');
+      throw new Error('Missing GOOGLE_CLIENT_ID');
+    }
 
     const ident = await this.googleVerifier.verifyIdToken(idToken, clientId);
 
-    const existing = await this.usersRepo.findOne({ where: { googleSub: ident.sub } });
+    const existing = await this.usersRepo.findOne({
+      where: { googleSub: ident.sub },
+    });
+
     if (existing) {
-      return { userId: existing.id, email: existing.email, name: existing.name};
+      return {
+        userId: existing.id,
+        email: existing.email,
+        name: existing.name,
+      };
     }
 
     const created = this.usersRepo.create({
@@ -32,6 +44,11 @@ export class AuthService {
     });
 
     const saved = await this.usersRepo.save(created);
-    return { userId: saved.id, email: saved.email, name: saved.name };
+
+    return {
+      userId: saved.id,
+      email: saved.email,
+      name: saved.name,
+    };
   }
 }

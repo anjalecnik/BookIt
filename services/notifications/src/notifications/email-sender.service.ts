@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import nodemailer, { Transporter } from 'nodemailer';
 
@@ -12,6 +12,7 @@ export type EmailPayload = {
 @Injectable()
 export class EmailSenderService {
   private transporter: Transporter;
+  private readonly logger = new Logger(EmailSenderService.name);
 
   constructor(private cfg: ConfigService) {
     const host = this.cfg.get<string>('SMTP_HOST');
@@ -20,19 +21,24 @@ export class EmailSenderService {
     const pass = this.cfg.get<string>('SMTP_PASS');
 
     if (!host || !user || !pass) {
-      throw new Error('Missing SMTP configuration (SMTP_HOST/SMTP_USER/SMTP_PASS)');
+      this.logger.error(
+        'Missing SMTP configuration (SMTP_HOST/SMTP_USER/SMTP_PASS)',
+      );
+      throw new Error(
+        'Missing SMTP configuration (SMTP_HOST/SMTP_USER/SMTP_PASS)',
+      );
     }
 
     this.transporter = nodemailer.createTransport({
       host,
       port,
-      secure: port === 465, 
+      secure: port === 465,
       auth: { user, pass },
     });
   }
-
   async sendEmail(payload: EmailPayload) {
-    const from = this.cfg.get<string>('SMTP_FROM') ?? this.cfg.get<string>('SMTP_USER')!;
+    const from =
+      this.cfg.get<string>('SMTP_FROM') ?? this.cfg.get<string>('SMTP_USER')!;
     await this.transporter.sendMail({
       from,
       to: payload.to,

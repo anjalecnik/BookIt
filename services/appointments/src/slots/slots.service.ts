@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,6 +11,8 @@ import { NotificationsClient } from '../notifications/notifications.client';
 
 @Injectable()
 export class SlotsService {
+  private readonly logger = new Logger(SlotsService.name);
+
   constructor(
     private dataSource: DataSource,
     @InjectRepository(AppointmentSlotEntity)
@@ -35,15 +38,24 @@ export class SlotsService {
         lock: { mode: 'pessimistic_write' },
       });
 
-      if (!slot) throw new NotFoundException('Slot not found');
-      if (slot.reservedByUserId)
+      if (!slot) {
+        this.logger.warn(`Slot not found slotId=${slotId}`);
+        throw new NotFoundException('Slot not found');
+      }
+
+      if (slot.reservedByUserId) {
+        this.logger.warn(`Slot already reserved slotId=${slotId}`);
         throw new BadRequestException('Slot already reserved');
+      }
 
       slot.reservedByUserId = userId;
       slot.reservedAt = new Date();
 
-      return repo.save(slot);
+      const saved = await repo.save(slot);
+      return saved;
     });
+
+    this.logger.log(`Sending reservation email to=${email}`);
 
     await this.notifications.sendEmail({
       to: email,
@@ -63,20 +75,31 @@ export class SlotsService {
         lock: { mode: 'pessimistic_write' },
       });
 
-      if (!slot) throw new NotFoundException('Slot not found');
-      if (!slot.reservedByUserId)
+      if (!slot) {
+        this.logger.warn(`Slot not found slotId=${slotId}`);
+        throw new NotFoundException('Slot not found');
+      }
+
+      if (!slot.reservedByUserId) {
+        this.logger.warn(`Cancel failed - slot not reserved slotId=${slotId}`);
         throw new BadRequestException('Slot is not reserved');
-      if (slot.reservedByUserId !== userId)
+      }
+
+      if (slot.reservedByUserId !== userId) {
         throw new BadRequestException('Not your reservation');
+      }
 
       slot.reservedByUserId = null;
       slot.reservedAt = null;
 
-      return repo.save(slot);
+      const saved = await repo.save(slot);
+      return saved;
     });
   }
 
   async seedPredefinedSlots() {
+    this.logger.log('Seeding predefined slots');
+
     const providers = Object.values(Provider);
 
     const now = new Date();
@@ -115,6 +138,8 @@ export class SlotsService {
       .values(slots)
       .orIgnore()
       .execute();
+
+    this.logger.log(`Seed completed slotsPrepared=${slots.length}`);
 
     return { insertedOrExisting: slots.length };
   }

@@ -87,7 +87,7 @@ describe('SlotsService', () => {
       return cb(manager);
     });
 
-    const result = await service.reserve('slot-1', 'user-1', 'a@b.com');
+    const result = await service.reserve('slot-1', 'user-1');
 
     expect(managerRepo.findOne).toHaveBeenCalledWith({
       where: { id: 'slot-1' },
@@ -117,9 +117,9 @@ describe('SlotsService', () => {
       return cb(manager);
     });
 
-    await expect(
-      service.reserve('missing', 'user-1', 'a@b.com'),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.reserve('missing', 'user-1')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
 
     expect(notificationsClient.sendEmail).not.toHaveBeenCalled();
   });
@@ -145,9 +145,9 @@ describe('SlotsService', () => {
       return cb(manager);
     });
 
-    await expect(
-      service.reserve('slot-1', 'user-1', 'a@b.com'),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.reserve('slot-1', 'user-1')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
 
     expect(managerRepo.save).not.toHaveBeenCalled();
     expect(notificationsClient.sendEmail).not.toHaveBeenCalled();

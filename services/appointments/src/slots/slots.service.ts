@@ -9,8 +9,7 @@ import {
 import { DataSource, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AppointmentSlotEntity, Provider } from './appointment-slot.entity';
-import { NotificationsClient } from '../notifications/notifications.client';
-import type { ClientGrpc } from '@nestjs/microservices';
+import type { ClientGrpc, ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, Observable } from 'rxjs';
 
 type UserResponse = {
@@ -32,8 +31,8 @@ export class SlotsService implements OnModuleInit {
     private dataSource: DataSource,
     @InjectRepository(AppointmentSlotEntity)
     private slotsRepo: Repository<AppointmentSlotEntity>,
-    private notifications: NotificationsClient,
     @Inject('USERS_PACKAGE') private usersClient: ClientGrpc,
+    @Inject('NOTIFICATIONS_BROKER') private brokerClient: ClientProxy,
   ) {}
 
   onModuleInit() {
@@ -79,10 +78,13 @@ export class SlotsService implements OnModuleInit {
       return repo.save(slot);
     });
 
-    await this.notifications.sendEmail({
-      to: user.email,
-      subject: 'BookIt – Rezervacija potrjena',
-      text: `Rezervacija je potrjena (${savedSlot.provider}) ${savedSlot.startsAt.toISOString()}–${savedSlot.endsAt.toISOString()}.`,
+    this.brokerClient.emit('appointment.reserved', {
+      slotId: savedSlot.id,
+      userId,
+      email: user.email,
+      provider: savedSlot.provider,
+      startsAt: savedSlot.startsAt.toISOString(),
+      endsAt: savedSlot.endsAt.toISOString(),
     });
 
     return savedSlot;

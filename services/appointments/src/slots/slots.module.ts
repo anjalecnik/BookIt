@@ -3,15 +3,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppointmentSlotEntity } from './appointment-slot.entity';
 import { SlotsController } from './slots.controller';
 import { SlotsService } from './slots.service';
-import { HttpModule } from '@nestjs/axios';
-import { NotificationsClient } from '../notifications/notifications.client';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([AppointmentSlotEntity]),
-    HttpModule,
     ClientsModule.register([
       {
         name: 'USERS_PACKAGE',
@@ -22,9 +19,20 @@ import { join } from 'path';
           url: 'users-service:50051',
         },
       },
+      {
+        name: 'NOTIFICATIONS_BROKER',
+        transport: Transport.RMQ,
+        options: {
+          urls: [process.env.RABBITMQ_URL ?? 'amqp://rabbitmq:5672'],
+          queue: 'notifications_queue',
+          queueOptions: {
+            durable: true,
+          },
+        },
+      },
     ]),
   ],
   controllers: [SlotsController],
-  providers: [SlotsService, NotificationsClient],
+  providers: [SlotsService],
 })
 export class SlotsModule {}

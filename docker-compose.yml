@@ -48,6 +48,13 @@ services:
       users-db:
         condition: service_healthy
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: bookit-rabbitmq
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+
   appointments:
     build:
       context: ./services/appointments
@@ -79,6 +86,31 @@ services:
       RABBITMQ_URL: 'amqp://rabbitmq:5672'
     ports:
       - '3003:3003'
+
+  web-gateway:
+    image: nginx:alpine
+    container_name: bookit-web-gateway
+    volumes:
+      - ./services/web-gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - '8080:8080'
+    depends_on:
+      - users
+      - appointments
+
+  mobile-gateway:
+    build:
+      context: ./services/mobile-gateway
+      dockerfile: Dockerfile
+    container_name: bookit-mobile-gateway
+    environment:
+      USERS_URL: 'http://users:3001'
+      APPOINTMENTS_URL: 'http://appointments:3002'
+    ports:
+      - '8081:8081'
+    depends_on:
+      - users
+      - appointments
 
 volumes:
   users_db_data:

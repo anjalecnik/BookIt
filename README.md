@@ -56,8 +56,7 @@ S tem se hkrati zaženejo mikrostoritve in ustvarita se tudi PostgreSQL bazi za 
 V mapi `web/` ustvarite `.env` datoteko:
 
 ```env
-VITE_USERS_API=http://localhost:3001
-VITE_APPOINTMENTS_API=http://localhost:3002
+VITE_WEB_GATEWAY_API=http://localhost:8080/api/web
 VITE_GOOGLE_CLIENT_ID=<google_oauth_client_id>
 ```
 

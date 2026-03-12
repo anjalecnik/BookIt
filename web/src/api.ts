@@ -1,5 +1,4 @@
-const USERS_API = import.meta.env.VITE_USERS_API as string;
-const APPT_API = import.meta.env.VITE_APPOINTMENTS_API as string;
+const WEB_GATEWAY_API = import.meta.env.VITE_WEB_GATEWAY_API as string;
 
 export type Slot = {
   id: string;
@@ -11,7 +10,7 @@ export type Slot = {
 };
 
 export async function authWithGoogle(idToken: string) {
-  const res = await fetch(`${USERS_API}/auth/google`, {
+  const res = await fetch(`${WEB_GATEWAY_API}/auth/google`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ idToken })
@@ -21,13 +20,13 @@ export async function authWithGoogle(idToken: string) {
 }
 
 export async function getProviders(): Promise<string[]> {
-  const res = await fetch(`${APPT_API}/providers`);
+  const res = await fetch(`${WEB_GATEWAY_API}/providers`);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
 export async function getSlots(provider?: string): Promise<Slot[]> {
-  const url = new URL(`${APPT_API}/slots`);
+  const url = new URL(`${WEB_GATEWAY_API}/slots`);
   if (provider) url.searchParams.set('provider', provider);
   const res = await fetch(url.toString());
   if (!res.ok) throw new Error(await res.text());
@@ -35,13 +34,13 @@ export async function getSlots(provider?: string): Promise<Slot[]> {
 }
 
 export async function seedSlots() {
-  const res = await fetch(`${APPT_API}/slots/seed`, { method: 'POST' });
+  const res = await fetch(`${WEB_GATEWAY_API}/slots/seed`, { method: 'POST' });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
 export async function reserveSlot(slotId: string, userId: string, email: string): Promise<Slot> {
-  const res = await fetch(`${APPT_API}/reservations`, {
+  const res = await fetch(`${WEB_GATEWAY_API}/reservations`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ slotId, userId, email })
@@ -51,7 +50,7 @@ export async function reserveSlot(slotId: string, userId: string, email: string)
 }
 
 export async function cancelReservation(slotId: string, userId: string): Promise<Slot> {
-  const url = new URL(`${APPT_API}/reservations/${slotId}`);
+  const url = new URL(`${WEB_GATEWAY_API}/reservations/${slotId}`);
   url.searchParams.set('userId', userId);
   const res = await fetch(url.toString(), { method: 'DELETE' });
   if (!res.ok) throw new Error(await res.text());

@@ -3,22 +3,43 @@ import {
   Injectable,
   NotFoundException,
   Logger,
+  Inject,
+  OnModuleInit,
 } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AppointmentSlotEntity, Provider } from './appointment-slot.entity';
 import { NotificationsClient } from '../notifications/notifications.client';
+import type { ClientGrpc } from '@nestjs/microservices';
+import { firstValueFrom, Observable } from 'rxjs';
+
+type UserResponse = {
+  userId: string;
+  email: string;
+  name: string;
+};
+
+type UsersGrpcService = {
+  getUserById(data: { userId: string }): Observable<UserResponse>;
+};
 
 @Injectable()
-export class SlotsService {
+export class SlotsService implements OnModuleInit {
   private readonly logger = new Logger(SlotsService.name);
+  private usersGrpcService: UsersGrpcService;
 
   constructor(
     private dataSource: DataSource,
     @InjectRepository(AppointmentSlotEntity)
     private slotsRepo: Repository<AppointmentSlotEntity>,
     private notifications: NotificationsClient,
+    @Inject('USERS_PACKAGE') private usersClient: ClientGrpc,
   ) {}
+
+  onModuleInit() {
+    this.usersGrpcService =
+      this.usersClient.getService<UsersGrpcService>('UsersService');
+  }
 
   providers(): string[] {
     return Object.values(Provider);
@@ -29,7 +50,11 @@ export class SlotsService {
     return this.slotsRepo.find({ where, order: { startsAt: 'ASC' } });
   }
 
-  async reserve(slotId: string, userId: string, email: string) {
+  async reserve(slotId: string, userId: string) {
+    const user = await firstValueFrom(
+      this.usersGrpcService.getUserById({ userId }),
+    );
+
     const savedSlot = await this.dataSource.transaction(async (manager) => {
       const repo = manager.getRepository(AppointmentSlotEntity);
 
@@ -51,14 +76,11 @@ export class SlotsService {
       slot.reservedByUserId = userId;
       slot.reservedAt = new Date();
 
-      const saved = await repo.save(slot);
-      return saved;
+      return repo.save(slot);
     });
 
-    this.logger.log(`Sending reservation email to=${email}`);
-
     await this.notifications.sendEmail({
-      to: email,
+      to: user.email,
       subject: 'BookIt – Rezervacija potrjena',
       text: `Rezervacija je potrjena (${savedSlot.provider}) ${savedSlot.startsAt.toISOString()}–${savedSlot.endsAt.toISOString()}.`,
     });
@@ -92,8 +114,7 @@ export class SlotsService {
       slot.reservedByUserId = null;
       slot.reservedAt = null;
 
-      const saved = await repo.save(slot);
-      return saved;
+      return repo.save(slot);
     });
   }
 
@@ -101,7 +122,6 @@ export class SlotsService {
     this.logger.log('Seeding predefined slots');
 
     const providers = Object.values(Provider);
-
     const now = new Date();
     const base = new Date(
       Date.UTC(

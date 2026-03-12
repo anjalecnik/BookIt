@@ -10,8 +10,4 @@ export class ReserveSlotDto {
   @IsString()
   @MinLength(3)
   userId!: string;
-
-  @ApiProperty({ description: 'User email for notifications' })
-  @IsEmail()
-  email!: string;
 }

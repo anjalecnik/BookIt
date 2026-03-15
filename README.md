@@ -28,9 +28,7 @@ Sistem je zasnovan kot spletna aplikacija, ki prek API-vmesnikov komunicira z za
 
 ![Arhitekturni diagram](https://github.com/user-attachments/assets/3458b490-28a0-4cc7-8371-ca0fcb91027b)
 
-## 4. Navodila za zagon
-
-### 4.1 Zagon z Docker Compose (mikrostoritve + baze)
+## 4. Navodila za zagon 🐳
 
 V root mapi projekta ustvarite `.env` datoteko in nastavite:
 
@@ -49,34 +47,4 @@ Nato zaženite:
 docker compose up -d
 ```
 
-S tem se hkrati zaženejo mikrostoritve in ustvarita se tudi PostgreSQL bazi za users in appointments.
-
-### 4.1 Zagon spletne aplikacije (frontend)
-
-V mapi `microfrontends/apps/shell` ustvarite `.env` datoteko:
-
-```env
-VITE_WEB_GATEWAY_API=http://localhost:8080/api/web
-VITE_GOOGLE_CLIENT_ID=<google_oauth_client_id>
-```
-
-Nato zaženite:
-
-```bash
-cd microfrontends
-
-npm install
-
-npm run build --workspace=booking-mf
-npm run preview --workspace=booking-mf
-```
-
-V drugem terminalu:
-
-```bash
-cd microfrontends
-
-npm run dev --workspace=shell
-```
-
-Frontend teče na (privzeto): `http://localhost:5173`
+S tem se hkrati zaženejo mikrostoritve in frontend, ustvarita pa se tudi PostgreSQL bazi za users in appointments.

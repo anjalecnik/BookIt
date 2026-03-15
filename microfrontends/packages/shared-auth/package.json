@@ -1,0 +1,10 @@
+{
+  "name": "@mf/shared-auth",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "devDependencies": {
+    "@originjs/vite-plugin-federation": "^1.4.1"
+  }
+}

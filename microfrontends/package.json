@@ -1,0 +1,15 @@
+{
+  "name": "microfrontends",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:shell": "npm run dev --workspace=shell",
+    "dev:auth": "npm run dev --workspace=auth-mf",
+    "dev:booking": "npm run dev --workspace=booking-mf",
+    "build": "npm run build --workspaces"
+  }
+}

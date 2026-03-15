@@ -53,7 +53,7 @@ S tem se hkrati zaženejo mikrostoritve in ustvarita se tudi PostgreSQL bazi za 
 
 ### 4.1 Zagon spletne aplikacije (frontend)
 
-V mapi `web/` ustvarite `.env` datoteko:
+V mapi `microfrontends/apps/shell` ustvarite `.env` datoteko:
 
 ```env
 VITE_WEB_GATEWAY_API=http://localhost:8080/api/web
@@ -63,9 +63,20 @@ VITE_GOOGLE_CLIENT_ID=<google_oauth_client_id>
 Nato zaženite:
 
 ```bash
-cd web
+cd microfrontends
+
 npm install
-npm run dev
+
+npm run build --workspace=booking-mf
+npm run preview --workspace=booking-mf
+```
+
+V drugem terminalu:
+
+```bash
+cd microfrontends
+
+npm run dev --workspace=shell
 ```
 
 Frontend teče na (privzeto): `http://localhost:5173`

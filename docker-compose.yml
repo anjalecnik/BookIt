@@ -112,6 +112,29 @@ services:
       - users
       - appointments
 
+  booking-mf:
+    build:
+      context: ./microfrontends
+      dockerfile: apps/booking-mf/Dockerfile
+      args:
+        VITE_WEB_GATEWAY_API: 'http://localhost:8080/api/web'
+    container_name: bookit-booking-mf
+    ports:
+      - '4175:80'
+
+  shell:
+    build:
+      context: ./microfrontends
+      dockerfile: apps/shell/Dockerfile
+      args:
+        VITE_BOOKING_REMOTE_URL: 'http://localhost:4175/assets/remoteEntry.js'
+        VITE_WEB_GATEWAY_API: 'http://localhost:8080/api/web'
+    container_name: bookit-shell
+    ports:
+      - '4173:80'
+    depends_on:
+      - booking-mf
+
 volumes:
   users_db_data:
   appointments_db_data:

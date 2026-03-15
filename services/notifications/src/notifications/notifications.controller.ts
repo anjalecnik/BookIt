@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { SendEmailDto } from './dto/send-email.dto';
@@ -17,6 +17,15 @@ type AppointmentReservedEvent = {
 @Controller('notify')
 export class NotificationsController {
   constructor(private email: EmailSenderService) {}
+
+  @Get('health')
+  health() {
+    return {
+      status: 'ok',
+      service: 'notifications',
+      timestamp: new Date().toISOString(),
+    };
+  }
 
   @Post('email')
   send(@Body() dto: SendEmailDto) {

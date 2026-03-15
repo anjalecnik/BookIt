@@ -17,6 +17,15 @@ import { ReserveSlotDto } from './dto/reserve.dto';
 export class SlotsController {
   constructor(private slots: SlotsService) {}
 
+  @Get('health')
+  health() {
+    return {
+      status: 'ok',
+      service: 'appointments',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @Get('providers')
   providers() {
     return this.slots.providers();
